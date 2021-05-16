@@ -140,7 +140,6 @@ public class UsuarioController {
                     logger.info("Nombres: " + usvo.getUsnombres());
                     logger.info("Area: " + usvo.getArea().getArNombre());
                     logger.info("Rol: " + usvo.getRol().getRolNombre());
-                    break;
                 }
 
             } else if (listusers.getStatusCode().equals(HttpStatus.NOT_FOUND)) {

@@ -94,11 +94,13 @@ public class UsuarioService implements IUsuarioService {
     public Boolean updatePassword(long id, String passwordOld, String passwordNew) {
         try {
             Optional<Usuarios> usentity = usrepository.findById(id);
-            passwordOld = Base64.getEncoder().encodeToString(passwordOld.getBytes());
-            if (usentity.get().getUsclave().equals(passwordOld)) {
-                passwordNew = Base64.getEncoder().encodeToString(passwordNew.getBytes());
-                usrepository.updatePassword(id, passwordNew);
-                return true;
+            if (usentity.isPresent()) {
+                passwordOld = Base64.getEncoder().encodeToString(passwordOld.getBytes());
+                if (usentity.get().getUsclave().equals(passwordOld)) {
+                    passwordNew = Base64.getEncoder().encodeToString(passwordNew.getBytes());
+                    usrepository.updatePassword(id, passwordNew);
+                    return true;
+                }
             }
         } catch (Exception e) {
             logger.error("Error al actualizar clave en service updatePassword: " + e);
