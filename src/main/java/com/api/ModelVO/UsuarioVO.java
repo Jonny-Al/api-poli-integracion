@@ -2,7 +2,6 @@ package com.api.ModelVO;
 
 import com.fasterxml.jackson.annotation.*;
 import javax.validation.constraints.*;
-import net.bytebuddy.implementation.bind.annotation.Default;
 
 public class UsuarioVO {
 

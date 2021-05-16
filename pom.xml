@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.api</groupId>
-    <artifactId>ApiRest</artifactId>
+    <artifactId>api-rest-appday</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>ApiRest</name>
-    <description>Service Rest</description>
+    <name>api-appday</name>
+    <description>Service rest of AppDay</description>
     <properties>
         <java.version>1.8</java.version>
     </properties>
