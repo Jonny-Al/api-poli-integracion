@@ -21,7 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping ("/api/users")
-@CrossOrigin (origins = "*")
+//@CrossOrigin (origins = "*")
 public class UsuarioController {
 
     @Value ("#{'${path.api.users}'}")
