@@ -28,7 +28,7 @@ public class Util {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
         headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        //headers.set("Authorization", "Bearer token");
+        headers.set("Authorization", "Bearer token");
         return headers;
     }
 

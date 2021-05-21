@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import java.util.List;
 
+@CrossOrigin (origins = "http://localhost:4200",maxAge = 3600)
 @RestController
 @RequestMapping ("/api/users")
-@CrossOrigin (origins = "http://localhost:4200",maxAge = 3600)
 public class UsuarioController {
 
     @Value ("#{'${path.api.users}'}")
