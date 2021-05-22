@@ -132,6 +132,7 @@ public class UsuarioService implements IUsuarioService {
                     }
                 } else if (type.equalsIgnoreCase("Completa")) {
                     try {
+                        usvo.setUsclave(Base64.getEncoder().encodeToString(usvo.getUsclave().getBytes()));
                         usrepository.save(convertToEntity(usvo));
                         response = "Actualizado";
                     } catch (Exception e) {
