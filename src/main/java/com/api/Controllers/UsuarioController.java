@@ -17,9 +17,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.*;
 import java.util.List;
 
-@CrossOrigin (origins = "http://localhost:4200",maxAge = 3600)
+@CrossOrigin (origins = "http://localhost:4200", maxAge = 3600)
 @RestController
 @RequestMapping ("/api/users")
 public class UsuarioController {
@@ -121,6 +123,40 @@ public class UsuarioController {
         }
     }
 
+    // ========================================= PRUEBAS
+
+    // ============ UPLOAD FILE
+    @PostMapping (path = "/file", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadFile(@RequestParam ("file") MultipartFile file) throws Exception {
+
+        if (!file.isEmpty()) {
+
+            //=== Leer lineas del file
+            String line;
+            InputStream stream = file.getInputStream();
+            BufferedReader buffered = new BufferedReader(new InputStreamReader(stream));
+            while ((line = buffered.readLine()) != null) {
+                System.out.print(line);
+            }
+
+            // === Enviar el file como llega a una ruta
+            file.transferTo(new File("C:\\Users\\WDS\\Downloads\\" + file.getOriginalFilename()));
+
+            // === Obtiene los bytes del file en zip y envia a ruta
+            byte[] zipBytes = Util.getBytesFileZip(file);
+            File filePath = new File("C:\\Users\\WDS\\Downloads\\comprimido.zip");
+            OutputStream os = new FileOutputStream(filePath);
+            os.write(zipBytes);
+            os.close();
+
+        } else {
+            System.out.println("No se obtiene file en Usuariocontroller uploadFile");
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(Util.messageJson("OK"));
+    }
+
+
+    // ==== Consume esta misma api el metodo de listar usuarios
     @GetMapping ("/lista")
     private void listarUsuarios() {
         try {
@@ -151,7 +187,7 @@ public class UsuarioController {
         }
     }
 
-
+    // ==== Consume esta misma api el metodo de add usuario
     @PostMapping ("/agregar")
     public void agregarUsuario() {
 
@@ -182,7 +218,6 @@ public class UsuarioController {
             if (request.getStatusCode().equals(HttpStatus.CREATED)) {
                 logger.info("Usuario agregado");
             }
-
 
         } catch (Exception e) {
             logger.error("Error al agregar el usuario desde el metodo agregarUsuario: " + e);
