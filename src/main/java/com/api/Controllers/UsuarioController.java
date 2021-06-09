@@ -2,6 +2,7 @@ package com.api.Controllers;
 
 import com.api.ModelVO.UsuarioVO;
 import com.api.Services.IUsuarioService;
+import java.util.List;
 import com.api.Utils.Util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.validation.Valid;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
-import java.util.List;
 
 @CrossOrigin (origins = "http://localhost:4200", maxAge = 3600)
 @RestController

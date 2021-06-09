@@ -4,11 +4,12 @@ import com.api.ModelVO.UsuarioVO;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.util.zip.ZipEntry;
@@ -57,7 +58,8 @@ public class Util {
     }
 
 
-    // ======================== Metodos HTTP
+    // ======================== Metodos HTTP enviar json u object en Entity
+
     private static HttpHeaders getHttpHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
@@ -76,9 +78,47 @@ public class Util {
         return new HttpEntity(json.toString(), getHttpHeaders());
     }
 
-
     // == HttpEntity para enviar objeto json
     public static HttpEntity getHttpEntity(JSONObject json) {
         return new HttpEntity(json.toString(), getHttpHeaders());
     }
+
+    // ================= Metodos Http para enviar body en entity para autenticacion y obtener token
+
+    private static void getToken() {
+
+        String PATH_SSO = "PATH_SSO";
+        RestTemplate template = new RestTemplate();
+
+        try {
+
+            HttpEntity<?> entity = new HttpEntity<Object>(getBodySSO(), getHttpHeadersUrlEncoded());
+            ResponseEntity<String> response = template.exchange(PATH_SSO, HttpMethod.POST, entity, String.class);
+
+            JSONObject jsonResponse = new JSONObject(response.getBody());
+            String TOKEN = jsonResponse.get("access_token").toString();
+
+        } catch (Exception e) {
+            logger.error("Error al obtener el token: ", e);
+        }
+    }
+
+    private static HttpHeaders getHttpHeadersUrlEncoded() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.add("Accept", "application/json");
+        headers.add("Authorization", "Basic TOKEN");
+        return headers;
+    }
+
+    private static MultiValueMap<String, String> getBodySSO() {
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("username", "user");
+        body.add("password", "contraseña");
+        body.add("grant_type", "grantype");
+        body.add("client_id", "id_cliente");
+        body.add("refresh_token", "Bearer TOKEN");
+        return body;
+    }
+
 }
