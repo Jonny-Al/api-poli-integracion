@@ -1,6 +1,7 @@
 package com.api.Utils;
 
 import com.api.ModelVO.UsuarioVO;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -119,6 +122,33 @@ public class Util {
         body.add("client_id", "id_cliente");
         body.add("refresh_token", "Bearer TOKEN");
         return body;
+    }
+
+    // ================ OBTENER LA KEY SIN SABER NOMBRE DE UN JSON
+
+    private void keyJson(String json) {
+
+        try {
+
+            JSONObject jsonObject = new JSONObject(json);
+            Iterator<String> iteratorKey = jsonObject.keys();
+
+            String key = iteratorKey.next();
+            String value = jsonObject.get(key).toString();
+
+            if (jsonObject.has("key")) { // Valida si una key existe en el json
+                logger.info("Esta llave en el json si existe");
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, String> map = mapper.readValue(value, Map.class);
+
+            logger.info(map.get("mi-key-in-json-value"));
+
+        } catch (Exception e) {
+            logger.error("");
+        }
+
     }
 
 }
