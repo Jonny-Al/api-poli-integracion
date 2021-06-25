@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
@@ -18,7 +20,23 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+@Component
 public class Util {
+
+    // PARA QUE LOS @VALUE TOMEN LOS VALORES DEL PROPERTIES EN ESTA CLASE DEBE ESTAR EL @Component
+    // y en la clase donde se va llamar el metodo que requiere ejecutar donde se usan los @value debe ser con @Autowired ejemplo :
+    // @Autowired Util util;
+    @Value ("${sso.usuario}")
+    private String sso_usuario;
+
+    @Value ("${sso.clave}")
+    private String sso_clave;
+
+    @Value ("${sso.idcliente}")
+    private String sso_idcliente;
+
+    @Value ("${sso.refresh.token}")
+    private String sso_refresh_token;
 
     private static JSONObject json = null;
     private static final Logger logger = LoggerFactory.getLogger(Util.class);
@@ -37,29 +55,6 @@ public class Util {
         json = new JSONObject();
         return json.put("message", value).toString();
     }
-
-    // ============ Método para obtener los bytes de un archivo a zip al compress un file
-    public static byte[] getBytesFileZip(MultipartFile file) {
-        byte[] zipBytes = null;
-        try {
-            ByteArrayOutputStream bitArrayOut = new ByteArrayOutputStream();
-            ZipOutputStream zos = new ZipOutputStream(bitArrayOut);
-            zos.setMethod(ZipOutputStream.DEFLATED);
-            String fileName = file.getOriginalFilename();
-            zos.putNextEntry(new ZipEntry(fileName));
-
-            byte[] bytes = file.getBytes();
-            zos.write(bytes, 0, bytes.length);
-            zos.closeEntry();
-            zos.finish();
-            zos.close();
-            zipBytes = bitArrayOut.toByteArray();
-        } catch (Exception e) {
-            logger.error("Error al obtener comprimir y obtener bytes de file en Util getBytesFileZip : ");
-        }
-        return zipBytes;
-    }
-
 
     // ======================== Metodos HTTP enviar json u object en Entity
 
@@ -86,18 +81,16 @@ public class Util {
         return new HttpEntity(json.toString(), getHttpHeaders());
     }
 
-    // ================= Metodos Http para enviar body en entity para autenticacion y obtener token
+    // ================= Metodos Http para enviar body en entity para autenticacion y obtener token con XXX FORM URL ENCODED
 
-    private static void getToken() {
+    private void getToken() {
 
         String PATH_SSO = "PATH_SSO";
         RestTemplate template = new RestTemplate();
 
         try {
 
-            HttpEntity<?> entity = new HttpEntity<Object>(getBodySSO(), getHttpHeadersUrlEncoded());
-            ResponseEntity<String> response = template.exchange(PATH_SSO, HttpMethod.POST, entity, String.class);
-
+            ResponseEntity<String> response = template.exchange(PATH_SSO, HttpMethod.POST, getHttpEntitySSO(), String.class);
             JSONObject jsonResponse = new JSONObject(response.getBody());
             String TOKEN = jsonResponse.get("access_token").toString();
 
@@ -106,7 +99,12 @@ public class Util {
         }
     }
 
-    private static HttpHeaders getHttpHeadersUrlEncoded() {
+    private HttpEntity getHttpEntitySSO() {
+        return new HttpEntity<Object>(getBodySSO(), getHttpHeadersUrlEncoded());
+    }
+
+
+    private HttpHeaders getHttpHeadersUrlEncoded() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.add("Accept", "application/json");
@@ -114,23 +112,30 @@ public class Util {
         return headers;
     }
 
-    private static MultiValueMap<String, String> getBodySSO() {
+
+    public MultiValueMap<String, String> getBodySSO() {
+
+        System.out.println(sso_usuario);
+        System.out.println(sso_clave);
+        System.out.println(sso_idcliente);
+        System.out.println(sso_refresh_token);
+
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("username", "user");
-        body.add("password", "contraseña");
+        body.add("username", sso_usuario);
+        body.add("password", sso_clave);
         body.add("grant_type", "grantype");
-        body.add("client_id", "id_cliente");
-        body.add("refresh_token", "Bearer TOKEN");
+        body.add("client_id", sso_idcliente);
+        body.add("refresh_token", "Bearer " + sso_refresh_token);
         return body;
     }
 
     // ================ OBTENER LA KEY SIN SABER NOMBRE DE UN JSON
 
-    private void keyJson(String json) {
+    private static void getkeyJson(String cadena) {
 
         try {
 
-            JSONObject jsonObject = new JSONObject(json);
+            JSONObject jsonObject = new JSONObject(cadena);
             Iterator<String> iteratorKey = jsonObject.keys();
 
             String key = iteratorKey.next();
@@ -146,9 +151,31 @@ public class Util {
             logger.info(map.get("mi-key-in-json-value"));
 
         } catch (Exception e) {
-            logger.error("");
+            logger.error("Error al obtener la llave del json: ", e);
         }
 
+    }
+
+    // ============ Método para obtener los bytes de un archivo a zip al compress un file
+    public static byte[] getBytesFileZip(MultipartFile file) {
+        byte[] zipBytes = null;
+        try {
+            ByteArrayOutputStream bitArrayOut = new ByteArrayOutputStream();
+            ZipOutputStream zos = new ZipOutputStream(bitArrayOut);
+            zos.setMethod(ZipOutputStream.DEFLATED);
+            String fileName = file.getOriginalFilename();
+            zos.putNextEntry(new ZipEntry(fileName));
+
+            byte[] bytes = file.getBytes();
+            zos.write(bytes, 0, bytes.length);
+            zos.closeEntry();
+            zos.finish();
+            zos.close();
+            zipBytes = bitArrayOut.toByteArray();
+        } catch (Exception e) {
+            logger.error("Error al obtener comprimir y obtener bytes de file en Util getBytesFileZip : ");
+        }
+        return zipBytes;
     }
 
 }
