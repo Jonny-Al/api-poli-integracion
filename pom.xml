@@ -21,7 +21,7 @@
     </properties>
 
     <!-- KEYCLOAK -->
-    <dependencyManagement>
+   <!-- <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.keycloak.bom</groupId>
@@ -31,7 +31,7 @@
                 <scope>import</scope>
             </dependency>
         </dependencies>
-    </dependencyManagement>
+    </dependencyManagement>-->
 
     <dependencies>
         <!-- dependencies -->
@@ -85,10 +85,10 @@
             <version>20200518</version>
         </dependency>
         <!-- KEYCLOAK -->
-        <dependency>
+        <!--<dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-spring-boot-starter</artifactId>
-        </dependency>
+        </dependency>-->
 
         <!-- end dependencies -->
     </dependencies>

@@ -2,6 +2,7 @@ package com.api.Utils;
 
 import com.api.ModelVO.UsuarioVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +80,55 @@ public class Util {
     // == HttpEntity para enviar objeto json
     public static HttpEntity getHttpEntity(JSONObject json) {
         return new HttpEntity(json.toString(), getHttpHeaders());
+    }
+
+    public static String validKeyOfJsonLealtad(String jsonVariables) {
+        JSONObject json = new JSONObject(jsonVariables);
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            if (json.has("pl")) {
+                if (!json.get("pl").toString().equalsIgnoreCase("null")) {
+
+                    json = new JSONObject(jsonVariables);
+                    int eliminados = 0;
+
+                    logger.info("Tiene parametros de lealtad se procede a revisar si algun programa se debe eliminar");
+                    JSONArray jsonArray = json.getJSONArray("pl");
+                    int totalleal = jsonArray.length();
+
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject jsonPl = jsonArray.getJSONObject(i);
+                        if (jsonPl.has("k")) {
+                            if (jsonPl.has("dlt")) {
+                                if (jsonPl.get("dlt").equals(true)) {
+                                    jsonArray.remove(i);
+                                    eliminados++;
+                                    --i;
+                                }
+                            }
+                        } else {
+                            json.remove("pl");
+                            break;
+                        }
+                    }
+
+                    if (eliminados == totalleal) {
+                        if (json.has("pl")) {
+                            json.remove("pl");
+                        }
+                    }
+                } else {
+                    json.remove("pl");
+                }
+                Object objJson = objectMapper.readValue(json.toString(), Object.class);
+                jsonVariables = objectMapper.writeValueAsString(objJson);
+                logger.info("Parametros definidos: " + jsonVariables);
+
+            }
+        } catch (Exception e) {
+            logger.error("Error con llaves de lealtad en las utilidades validKeyOfJsonLealtad : ", e);
+        }
+        return jsonVariables;
     }
 
     // ================= Metodos Http para enviar body en entity para autenticacion y obtener token con XXX FORM URL ENCODED
