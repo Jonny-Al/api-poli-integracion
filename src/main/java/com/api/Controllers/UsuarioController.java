@@ -160,7 +160,6 @@ public class UsuarioController {
     @GetMapping ("/lista")
     private void listarUsuarios() {
         try {
-
             ResponseEntity<String> listusers = restTemplate.exchange(PATH_API_USERS + "/list/all", HttpMethod.GET, Util.getHttpEntity(), String.class);
 
             logger.info(listusers.getBody());

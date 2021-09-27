@@ -15,32 +15,36 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.zip.InflaterInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 @Component
 public class Util {
 
-    // PARA QUE LOS @VALUE TOMEN LOS VALORES DEL PROPERTIES EN ESTA CLASE DEBE ESTAR EL @Component
-    // y en la clase donde se va llamar el metodo que requiere ejecutar donde se usan los @value debe ser con @Autowired ejemplo :
-    // @Autowired Util util;
-    @Value ("${sso.usuario}")
-    private String sso_usuario;
-
-    @Value ("${sso.clave}")
-    private String sso_clave;
-
-    @Value ("${sso.idcliente}")
-    private String sso_idcliente;
-
-    @Value ("${sso.refresh.token}")
-    private String sso_refresh_token;
+    @Value ("${sso.path}")
+    private String PATH_SSO;
+    @Value ("${sso.basic.token}")
+    private String BASIC_TOKEN;
+    @Value ("${sso.username}")
+    private String SSO_USERNAME;
+    @Value ("${sso.password}")
+    private String SSO_PASSWORD;
+    @Value ("${sso.granttype}")
+    private String SSO_GRANTTYPE;
+    @Value ("${sso.clientid}")
+    private String SSO_CLIENTID;
 
     private static JSONObject json = null;
     private static final Logger logger = LoggerFactory.getLogger(Util.class);
+    private static RestTemplate rest = new RestTemplate();
+    private static String TOKEN = null;
 
     // ===== Método para enviar los errores de atributos en un JSON
     public static String errorsJson(BindingResult result) {
@@ -57,7 +61,67 @@ public class Util {
         return json.put("message", value).toString();
     }
 
-    // ======================== Metodos HTTP enviar json u object en Entity
+    // ============
+
+    public boolean setCreateInApi() {
+
+        logger.info("--- Inicio consumo api changes ---");
+        boolean update = false;
+        getTokenSSO();
+
+        try {
+
+            JSONObject json = new JSONObject();
+
+            json.put("nombre", "alejandro");
+            json.put("apellido", "garcia");
+            json.put("status", 1);
+            json.put("telefono", "215364545");
+
+            ResponseEntity<String> response = rest.exchange("http://localhost:8080/api/create", HttpMethod.POST, getHttpEntity(json), String.class);
+            logger.info("Response api create: " + response.getStatusCode());
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                logger.info("Se guardaron los cambios");
+                update = true;
+            } else {
+                logger.info("No se registro los cambios");
+            }
+        } catch (Exception e) {
+            logger.error("Error al enviar json a api : ", e);
+        }
+        return update;
+    }
+
+
+    public static HttpEntity getHttpEntity(JSONObject json) {
+        return new HttpEntity(json.toString(), getHttpheadersJson());
+    }
+
+    public static HttpEntity getHttpEntity() {
+        return new HttpEntity(getHttpheadersJson());
+    }
+
+    private static HttpHeaders getHttpheadersJson() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        headers.set("Authorization", "Bearer " + TOKEN);
+        return headers;
+    }
+
+    // ===== METODOS PARA OBTENER TOKEN DEL SSO
+    private void getTokenSSO() {
+        try {
+            ResponseEntity<String> response = rest.exchange(PATH_SSO, HttpMethod.POST, getHttpEntitySSO(), String.class);
+            JSONObject jsonResponse = new JSONObject(response.getBody());
+            TOKEN = jsonResponse.get("access_token").toString();
+        } catch (Exception e) {
+            logger.error("Error al obtener el token: ", e);
+        }
+    }
+
+
 
     private static HttpHeaders getHttpHeaders() {
         HttpHeaders headers = new HttpHeaders();
@@ -67,115 +131,24 @@ public class Util {
         return headers;
     }
 
-    public static HttpEntity getHttpEntity() {
-        return new HttpEntity(getHttpHeaders());
-    }
-
-    // == HttpEntity para enviar objeto en formato json
-    public static HttpEntity getHttpEntity(UsuarioVO usvo) {
-        JSONObject json = new JSONObject(usvo);
-        return new HttpEntity(json.toString(), getHttpHeaders());
-    }
-
-    // == HttpEntity para enviar objeto json
-    public static HttpEntity getHttpEntity(JSONObject json) {
-        return new HttpEntity(json.toString(), getHttpHeaders());
-    }
-
-    public static String validKeyOfJsonLealtad(String jsonVariables) {
-        JSONObject json = new JSONObject(jsonVariables);
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            if (json.has("pl")) {
-                if (!json.get("pl").toString().equalsIgnoreCase("null")) {
-
-                    json = new JSONObject(jsonVariables);
-                    int eliminados = 0;
-
-                    logger.info("Tiene parametros de lealtad se procede a revisar si algun programa se debe eliminar");
-                    JSONArray jsonArray = json.getJSONArray("pl");
-                    int totalleal = jsonArray.length();
-
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject jsonPl = jsonArray.getJSONObject(i);
-                        if (jsonPl.has("k")) {
-                            if (jsonPl.has("dlt")) {
-                                if (jsonPl.get("dlt").equals(true)) {
-                                    jsonArray.remove(i);
-                                    eliminados++;
-                                    --i;
-                                }
-                            }
-                        } else {
-                            json.remove("pl");
-                            break;
-                        }
-                    }
-
-                    if (eliminados == totalleal) {
-                        if (json.has("pl")) {
-                            json.remove("pl");
-                        }
-                    }
-                } else {
-                    json.remove("pl");
-                }
-                Object objJson = objectMapper.readValue(json.toString(), Object.class);
-                jsonVariables = objectMapper.writeValueAsString(objJson);
-                logger.info("Parametros definidos: " + jsonVariables);
-
-            }
-        } catch (Exception e) {
-            logger.error("Error con llaves de lealtad en las utilidades validKeyOfJsonLealtad : ", e);
-        }
-        return jsonVariables;
-    }
-
-    // ================= Metodos Http para enviar body en entity para autenticacion y obtener token con XXX FORM URL ENCODED
-
-    private void getToken() {
-
-        String PATH_SSO = "PATH_SSO";
-        RestTemplate template = new RestTemplate();
-
-        try {
-
-            ResponseEntity<String> response = template.exchange(PATH_SSO, HttpMethod.POST, getHttpEntitySSO(), String.class);
-            JSONObject jsonResponse = new JSONObject(response.getBody());
-            String TOKEN = jsonResponse.get("access_token").toString();
-
-        } catch (Exception e) {
-            logger.error("Error al obtener el token: ", e);
-        }
-    }
-
     private HttpEntity getHttpEntitySSO() {
-        return new HttpEntity<Object>(getBodySSO(), getHttpHeadersUrlEncoded());
+        return new HttpEntity(getBodySSO(), getHttpHeadersUrlEncoded());
     }
-
 
     private HttpHeaders getHttpHeadersUrlEncoded() {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.add("Content-Type", "application/x-www-form-urlencoded");
         headers.add("Accept", "application/json");
-        headers.add("Authorization", "Basic TOKEN");
+        headers.add("Authorization", "Basic " + BASIC_TOKEN);
         return headers;
     }
 
-
-    public MultiValueMap<String, String> getBodySSO() {
-
-        System.out.println(sso_usuario);
-        System.out.println(sso_clave);
-        System.out.println(sso_idcliente);
-        System.out.println(sso_refresh_token);
-
+    private MultiValueMap<String, String> getBodySSO() {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("username", sso_usuario);
-        body.add("password", sso_clave);
-        body.add("grant_type", "grantype");
-        body.add("client_id", sso_idcliente);
-        body.add("refresh_token", "Bearer " + sso_refresh_token);
+        body.add("username", SSO_USERNAME);
+        body.add("password", SSO_PASSWORD);
+        body.add("grant_type", SSO_GRANTTYPE);
+        body.add("client_id", SSO_CLIENTID);
         return body;
     }
 
@@ -226,6 +199,54 @@ public class Util {
             logger.error("Error al obtener comprimir y obtener bytes de file en Util getBytesFileZip : ");
         }
         return zipBytes;
+    }
+
+    public static byte[] comprimirFile(byte[] data, String aliasData) {
+        byte[] zipBytes = null;
+
+        try {
+            ByteArrayOutputStream bitArrayOut = new ByteArrayOutputStream();
+            ZipOutputStream zos = new ZipOutputStream(bitArrayOut);
+            zos.setMethod(ZipOutputStream.DEFLATED);
+            zos.putNextEntry(new ZipEntry(aliasData + ".txt"));
+
+            zos.write(data, 0, data.length);
+            zos.closeEntry();
+
+            zos.finish();
+            zos.close();
+            zipBytes = bitArrayOut.toByteArray();
+        } catch (Exception e) {
+            logger.error("ERROR AL COMPRIMIR EL FILE: " + e);
+        }
+
+        return zipBytes;
+    }
+
+    public static String inflate(String base64) {
+        try {
+            logger.info("base64<-: " + base64);
+            byte[] decodedBytes = Base64.getDecoder().decode(base64);
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(decodedBytes);
+            InflaterInputStream iis = new InflaterInputStream(bais);
+
+            String outputString = "";
+            byte[] buf = new byte[5];
+            int rlen = -1;
+            while ((rlen = iis.read(buf)) != -1) {
+                outputString += new String(Arrays.copyOf(buf, rlen));
+            }
+
+            // now result will contain "Hello World!"
+            System.out.println("Decompress result: " + outputString);
+            logger.info("outputString<-: " + outputString);
+
+            return outputString;
+        } catch (Exception ex) {
+            logger.error("error to inflate CUtilidades dowload", ex);
+        }
+        return null;
     }
 
 }
