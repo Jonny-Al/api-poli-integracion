@@ -17,10 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.InflaterInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -201,6 +198,36 @@ public class Util {
         return zipBytes;
     }
 
+    public static byte[] comprimirMultiFile(List<MultipartFile> filesDownload) {
+        byte[] zipBytes = null;
+
+        try {
+            ByteArrayOutputStream bitArrayOut = new ByteArrayOutputStream();
+            ZipOutputStream zos = new ZipOutputStream(bitArrayOut);
+            zos.setMethod(ZipOutputStream.DEFLATED);
+            List<MultipartFile> files = filesDownload;
+            // List<String> fileNames = new ArrayList<String>();
+            if (null != files && files.size() > 0) {
+                for (MultipartFile multipartFile : files) {
+                    String fileName = multipartFile.getOriginalFilename();
+                    zos.putNextEntry(new ZipEntry(fileName));
+
+                    byte[] bytes = multipartFile.getBytes();
+                    zos.write(bytes, 0, bytes.length);
+                    zos.closeEntry();
+                }
+            }
+            zos.finish();
+            zos.close();
+            zipBytes = bitArrayOut.toByteArray();
+            //
+        } catch (Exception e) {
+            logger.error("ERROR AL COMPRIMIR EL FILE: ", e);
+        }
+
+        return zipBytes;
+    }
+
     public static byte[] comprimirFile(byte[] data, String aliasData) {
         byte[] zipBytes = null;
 
@@ -248,5 +275,7 @@ public class Util {
         }
         return null;
     }
+
+
 
 }

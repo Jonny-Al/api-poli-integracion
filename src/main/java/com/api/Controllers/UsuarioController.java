@@ -2,6 +2,8 @@ package com.api.Controllers;
 
 import com.api.ModelVO.UsuarioVO;
 import com.api.Services.IUsuarioService;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import com.api.Utils.Util;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +12,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Required;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -19,6 +22,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
 import java.io.*;
 
 @CrossOrigin (origins = "http://localhost:4200", maxAge = 3600)
@@ -127,28 +131,53 @@ public class UsuarioController {
 
     // ============ UPLOAD FILE
     @PostMapping (path = "/file", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadFile(@RequestParam ("file") MultipartFile file) throws Exception {
+    public ResponseEntity<String> uploadFile(@RequestParam ("file") List<MultipartFile> file, @RequestParam ("os") List<MultipartFile> os, @RequestParam ("init") List<MultipartFile> init) throws Exception {
 
         if (!file.isEmpty()) {
+            logger.info("Hay file: ");
 
-            //=== Leer lineas del file
-            String line;
-            InputStream stream = file.getInputStream();
-            BufferedReader buffered = new BufferedReader(new InputStreamReader(stream));
-            while ((line = buffered.readLine()) != null) {
-                System.out.print(line);
+
+            // ==== FORMA UNO
+
+            List<MultipartFile> fileOS = new ArrayList<>();
+            List<MultipartFile> fileJSON = new ArrayList<>();
+            List<MultipartFile> files = new ArrayList<>();
+
+            for (MultipartFile f : file) {
+                String extension = StringUtils.getFilenameExtension(f.getOriginalFilename());
+                logger.info(extension);
+                logger.info(f.getContentType());
+                if (f.getContentType().equals("application/octet-stream")) {
+                    logger.info("Sistema operativo");
+                    fileOS.add(f);
+                } else if (f.getContentType().equals("application/json")) {
+                    logger.info("Un json");
+                    fileJSON.add(f);
+                } else {
+                    logger.info("Archivos.");
+                    files.add(f);
+                }
             }
 
-            // === Enviar el file como llega a una ruta
-            file.transferTo(new File("C:\\Users\\WDS\\Downloads\\" + file.getOriginalFilename()));
+            // ====
 
-            // === Obtiene los bytes del file en zip y envia a ruta
-            byte[] zipBytes = Util.getBytesFileZip(file);
-            File filePath = new File("C:\\Users\\WDS\\Downloads\\comprimido.zip");
-            OutputStream os = new FileOutputStream(filePath);
-            os.write(zipBytes);
-            os.close();
+            if (os.size() > 0) {
+                byte[] zipBytesOS = Util.comprimirMultiFile(os);
+                String b64OS = Base64.getEncoder().encodeToString(zipBytesOS);
+                //logger.info("B64OS : " + b64OS);
+            }
+            if (file.size() > 0) {
+                byte[] zipBytesJSON = Util.comprimirMultiFile(file);
+                String b64JSON = Base64.getEncoder().encodeToString(zipBytesJSON);
+                //logger.info("b64JSON : " + b64JSON);
+            }
+            if (init.size() > 0) {
+                byte[] zipBytesFiles = Util.comprimirMultiFile(init);
+                String b64FILES = Base64.getEncoder().encodeToString(zipBytesFiles);
+                //logger.info("b64FILES : " + b64FILES);
+            }
 
+            logger.info("Termino por completo");
         } else {
             System.out.println("No se obtiene file en Usuariocontroller uploadFile");
         }

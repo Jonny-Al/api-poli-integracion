@@ -1,9 +1,8 @@
 package com.api.Controllers;
 
 import com.api.Utils.Util;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -42,6 +41,19 @@ public class PruebasController {
         }
         System.out.printf("aca paso bn");
         return true;
+    }
+
+    @PostMapping(path = "/upload")
+    public void addFile(@RequestParam ("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                System.out.printf("No hay archivos");
+            } else {
+                System.out.printf("Si hay archivos");
+            }
+        } catch (Exception e) {
+            System.out.printf("Error: " + e);
+        }
     }
 
 
