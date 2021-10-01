@@ -43,18 +43,4 @@ public class PruebasController {
         return true;
     }
 
-    @PostMapping(path = "/upload")
-    public void addFile(@RequestParam ("file") MultipartFile file) {
-        try {
-            if (file.isEmpty()) {
-                System.out.printf("No hay archivos");
-            } else {
-                System.out.printf("Si hay archivos");
-            }
-        } catch (Exception e) {
-            System.out.printf("Error: " + e);
-        }
-    }
-
-
 }
