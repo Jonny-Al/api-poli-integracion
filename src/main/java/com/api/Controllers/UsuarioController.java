@@ -2,9 +2,7 @@ package com.api.Controllers;
 
 import com.api.ModelVO.UsuarioVO;
 import com.api.Services.IUsuarioService;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 import com.api.Utils.Util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.validation.Valid;
@@ -43,6 +41,38 @@ public class UsuarioController {
     private ResponseEntity<Object> listUsers(@PathVariable String option) {
         List<UsuarioVO> listusers = service.listUsers(option);
         return ResponseEntity.status(listusers != null ? HttpStatus.OK : HttpStatus.NOT_FOUND).body(listusers != null ? listusers : Util.messageJson("Sin información"));
+    }
+
+    @PostMapping (path = "/calculo")
+    public void calculo() {
+        try {
+
+            int diasopera = 6;
+
+            Date actual = new Date();
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(actual);
+            logger.info("Dias opera: " + diasopera);
+            logger.info("Fecha actual: " + calendar.getTime());
+            logger.info("Numero dia request: " + calendar.getTime().getDay());
+
+            calendar.add(Calendar.DAY_OF_YEAR, 1);
+            /*calendar.add(Calendar.HOUR, 2);
+            calendar.add(Calendar.SECOND, 15);*/
+
+            int diaMonitoring = calendar.getTime().getDay() == 0 ? 7 : calendar.getTime().getDay();
+            logger.info("Numero dia proximo monitoreo: " + diaMonitoring);
+
+            if (diaMonitoring >= diasopera) {
+                logger.info("El dia no esta en el rango que opera");
+                int faltan = 7 - diasopera;
+                logger.info("faltan: " + faltan);
+                calendar.add(Calendar.DAY_OF_YEAR, faltan);
+            }
+            logger.info("Response proximo monitoreo: " + calendar.getTime());
+        } catch (Exception e) {
+            logger.error("Error al calcular: ", e);
+        }
     }
 
     // Consulta usuario por id
