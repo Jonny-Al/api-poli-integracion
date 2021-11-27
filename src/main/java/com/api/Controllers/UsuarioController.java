@@ -47,6 +47,15 @@ public class UsuarioController {
     public void calculo() {
         try {
 
+
+            /*CREATE TABLE DATE_MONITORING (
+                    ID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    DATE_MONITORING DATETIME,
+                    TIME_ON TIME,
+                    TIME_OFF TIME,
+                    DAYS_WORKS INT
+            );*/
+
             int diasopera = 6;
 
             Date actual = new Date();
