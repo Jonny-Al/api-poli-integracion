@@ -1,8 +1,10 @@
 package com.api.Controllers;
 
+import com.api.Entity.DateMonitoring;
 import com.api.ModelVO.UsuarioVO;
 import com.api.Services.IUsuarioService;
 import java.util.*;
+import com.api.Services.MonitoringService;
 import com.api.Utils.Util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.validation.Valid;
@@ -35,6 +37,8 @@ public class UsuarioController {
 
     @Autowired
     IUsuarioService service;
+    @Autowired
+    MonitoringService monitoringService;
 
     // Lista de usuarios
     @GetMapping (path = "/list/{option}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -48,13 +52,22 @@ public class UsuarioController {
         try {
 
 
-            /*CREATE TABLE DATE_MONITORING (
+            /*
+            CREATE TABLE DATE_MONITORING (
                     ID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    DATE_MONITORING DATETIME,
+                    DATE_MONITORING DATE,
+                    TIME_MONITORING TIME,
                     TIME_ON TIME,
                     TIME_OFF TIME,
                     DAYS_WORKS INT
-            );*/
+);
+             */
+
+            DateMonitoring dtm = monitoringService.searchMonitoring();
+
+            if (dtm != null) {
+                logger.info("Encontre información");
+            }
 
             int diasopera = 6;
 
@@ -64,6 +77,7 @@ public class UsuarioController {
             logger.info("Dias opera: " + diasopera);
             logger.info("Fecha actual: " + calendar.getTime());
             logger.info("Numero dia request: " + calendar.getTime().getDay());
+
 
             calendar.add(Calendar.DAY_OF_YEAR, 1);
             /*calendar.add(Calendar.HOUR, 2);
@@ -78,6 +92,13 @@ public class UsuarioController {
                 logger.info("faltan: " + faltan);
                 calendar.add(Calendar.DAY_OF_YEAR, faltan);
             }
+            List<DateMonitoring> list = monitoringService.searchMonitoringdate(calendar.getTime());
+
+            if (list != null) {
+                logger.info("Ya hay monitoreo para este dia");
+            }
+
+
             logger.info("Response proximo monitoreo: " + calendar.getTime());
         } catch (Exception e) {
             logger.error("Error al calcular: ", e);
