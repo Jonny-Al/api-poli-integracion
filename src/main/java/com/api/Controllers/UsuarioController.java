@@ -1,9 +1,9 @@
 package com.api.Controllers;
 
+import java.util.*;
 import com.api.Entity.DateMonitoring;
 import com.api.ModelVO.UsuarioVO;
 import com.api.Services.IUsuarioService;
-import java.util.*;
 import com.api.Services.MonitoringService;
 import com.api.Utils.Util;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +17,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -39,6 +40,35 @@ public class UsuarioController {
     IUsuarioService service;
     @Autowired
     MonitoringService monitoringService;
+
+    @Value ("${key.not.change}")
+    String notkeys;
+
+    @PostMapping
+    @Async
+    public void compareJson() {
+
+        String upd = "{\"ivaA\": \"0\",\"ivaT\": \"1\",\"iac\": \"1\",\"iacA\": \"1\",\"iacT\": \"1\",\"cv\": \"0\",\"prop\":\"0\",\"ag\":\"0\"}";
+        String old = "{\"ivaA\": \"1\",\"ivaT\": \"0\",\"iac\": \"0\",\"iacA\": \"0\",\"iacT\": \"0\",\"cv\": \"1\",\"prop\":\"1\",\"ag\":\"1\"}";
+
+        JSONObject jsUpd = new JSONObject(upd);
+        logger.info("upd --> " + jsUpd);
+
+        JSONObject jsOld = new JSONObject(old);
+        logger.info("old --> " + jsOld);
+
+        JSONObject jsonNot = new JSONObject(notkeys);
+        logger.info("not --> " + jsonNot);
+
+
+        for (String key : JSONObject.getNames(jsUpd)) {
+            if (!jsonNot.has(key)) {
+                jsOld.put(key, jsUpd.get(key));
+            }
+        }
+
+        logger.info("finish --> " + jsOld);
+    }
 
     // Lista de usuarios
     @GetMapping (path = "/list/{option}", produces = MediaType.APPLICATION_JSON_VALUE)
