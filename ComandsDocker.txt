@@ -1,0 +1,72 @@
+* Crear JAR
+  mvn clean package
+
+* Correr un jar
+  java -jar target/api-rest-appday-1.0.0.0-SNAPSHOT.jar
+  java -jar <carpeta-del-jar>/<nombre-del-jar>.jar
+
+* Descargar image de mysql en docker
+  docker pull mysql
+
+* Construir el contenedor de MySQL
+
+  -d : Deatached Mode es la forma en que indicamos que corra en background.
+  -p : puerto, el contenedor corre en el puerto 3306 pero hacemos un bind para que lo escuchemos en Host el puerto 33061.
+  –name : para no tener que hacer referencia al hash le asignamos un nombre.
+  -e : environment le asignamos la contraseña.
+
+  docker run -d -p 3306:3306 --name mysql-apiday -e MYSQL_ROOT_PASSWORD=password -d mysql
+  docker run -d -p 3306:3306 --name <NOMBRE-PARA-RED-DB> -e MYSQL_ROOT_PASSWORD=password -d mysql
+
+* Acceder a linea de comandos de mysql
+  docker exec -it mysql-apiday bash
+
+* Ingresa a db
+  mysql -u root -ppassword
+  - ver bases de datos : show databases;
+
+* Ver redes
+  docker network ls
+
+* Crear una red
+  docker network create --attachable network-api-mysql
+  docker network create --attachable <NOMBRE-RED-CREAR>
+
+* Ver redes
+  docker network ls
+
+  CONTAINER ID   IMAGE     COMMAND                  CREATED         STATUS         PORTS                               NAMES
+  e30f8b9ac1b3   mysql     "docker-entrypoint.s…"   5 seconds ago   Up 2 seconds   0.0.0.0:3306->3306/tcp, 33060/tcp   mysql-apiday
+
+* Conectar a contenedor creado
+  docker network connect network-api-mysql mysql-apiday
+  docker network connect <RED-QUE-SE-CREO> <NOMBRE-MYSQL-QUE-SE-ARRANCO>
+
+* Ver descripcion de la red
+  docker network inspect network-api-mysql
+  docker network inspect <RED-QUE-SE-CREO>
+
+* Ver imagenes
+
+  docker images
+
+    REPOSITORY           TAG                IMAGE ID       CREATED      SIZE
+    repository-app-day   1.0.0.0-SNAPSHOT   d416b978bd87   2 days ago   150MB
+    mysql                latest             6cc1a43ad84d   5 days ago   535MB
+    jenkins/jenkins      latest             74f22659b4b6   6 days ago   463MB
+
+
+  docker run -d --network network-api-mysql -p 8080:8080 --name apirest <IMAGE-ID>
+  docker run -d --network network-api-mysql -p 8080:8080 --name apirest d416b978bd87
+
+* Ver contenedores
+
+  docker ps
+
+    CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS          PORTS                               NAMES
+    7d56f3cd9ac5   d416b978bd87   "java -jar /api-rest…"   6 minutes ago    Up 6 minutes    0.0.0.0:8080->8080/tcp              apirest
+    4ab543f9f6b5   mysql          "docker-entrypoint.s…"   41 minutes ago   Up 41 minutes   0.0.0.0:3306->3306/tcp, 33060/tcp   mysql-apiday
+
+
+  docker logs -f apirest
+  docker logs -f <NOMBRE-CONTENEDOR>

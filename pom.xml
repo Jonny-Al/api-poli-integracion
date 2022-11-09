@@ -12,7 +12,7 @@
 
     <groupId>com.api</groupId>
     <artifactId>api-rest-appday</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0.0-SNAPSHOT</version>
     <name>api-appday</name>
     <description>Service rest of AppDay</description>
 

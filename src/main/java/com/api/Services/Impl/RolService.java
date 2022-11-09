@@ -5,6 +5,8 @@ import com.api.ModelVO.RolVO;
 import com.api.Repository.IRolRepository;
 import com.api.Services.IRolService;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -14,13 +16,16 @@ import java.util.stream.Collectors;
 @Service
 public class RolService implements IRolService {
 
+    private static final Logger logger = LoggerFactory.getLogger(RolService.class);
     @Autowired
     IRolRepository rolRepository;
     private final ModelMapper modelMap = new ModelMapper();
 
     @Override
     public List<RolVO> listRoles() {
+        logger.info("* Consultando roles en db");
         List<Rol> listRoles = rolRepository.findAll();
+        logger.info(" retornando lista de roles");
         return (listRoles.size() > 0) ? mapperList(listRoles) : null;
     }
 
