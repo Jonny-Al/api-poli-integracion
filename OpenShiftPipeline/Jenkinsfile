@@ -1,0 +1,120 @@
+// Jenkinsfile for MGMT RESTful API
+def devTag      = "0.0-0"
+def prodTag     = "0.0"
+def artifact    = ""
+def isRelease
+podTemplate(
+  label: "maven-pod",
+  cloud: "openshift",
+  inheritFrom: "maven",
+  containers: [
+    containerTemplate(
+      name: "jnlp",
+      image: "docker-registry.default.svc:5000/jenkins/jenkins-agent-maven-35-rhel7",
+      resourceRequestMemory: "0.5Gi",
+      resourceLimitMemory: "0.6Gi",
+      resourceRequestCpu: "0.25",
+      resourceLimitCpu: "0.5"
+    )
+  ],
+  volumes: [persistentVolumeClaim(claimName: 'jenkins-m2-repo-pvc', mountPath: '/home/jenkins/.m2')]
+)
+
+{
+  node('maven-pod') {
+    echo "MGMT RESTful API Pipeline Start"
+
+    stage('Checkout Source') {
+      checkout scm
+
+      def pom = readMavenPom file: 'pom.xml'
+      devTag = pom.version  + "-"+currentBuild.number
+      prodTag = pom.version
+      artifact = pom.artifactId
+
+      echo "Devtag: ${devTag}"
+
+      isRelease = !prodTag.contains ('SNAPSHOT')
+
+      if (isRelease) {
+        echo "Es version release: "+ prodTag
+      } else {
+        echo "Es version Snapshot: "+ prodTag
+      }
+    }
+
+    stage('Build App') {
+      echo "Building version ${devTag}"
+      sh "mvn -s ./configuration/settings.xml clean package -DskipTests"
+      echo "Building complete version ${devTag}"
+    }
+
+    stage('Unit Tests') {
+      echo "Running Unit Test"
+      sh "mvn -s ./configuration/settings.xml test"
+      step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml', allowEmptyResults: true])
+    }
+
+    stage('Sonar') {
+      echo "Running Code Analysis"
+      sh "mvn -s ./configuration/settings.xml sonar:sonar -Dsonar.host.url=http://sonarqube.sonarqube.svc.cluster.local:9000/ -Dsonar.projectName=${JOB_BASE_NAME} -Dsonar.projectVersion=${devTag} -Dsonar.java.coveragePlugin=3 -Dsonar.junit.reportsPath=target/surefire-reports  -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml"
+    }
+
+    stage('Publish to Nexus') {
+      echo "Publish to Nexus"
+      if (isRelease) {
+        sh "mvn -s ./configuration/settings.xml deploy -DskipTests=true  -DaltDeploymentRepository=nexus::default::http://nexus3.nexus.svc.cluster.local:8081/repository/releases"
+      } else {
+        sh "mvn -s ./configuration/settings.xml deploy -DskipTests=true  -DaltDeploymentRepository=nexus::default::http://nexus3.nexus.svc.cluster.local:8081/repository/maven-snapshots"
+      }
+    }
+
+    stage('Build Image') {
+      sh "chmod 755 ./resources/comandos.sh"
+      sh "./resources/comandos.sh"
+      echo "Building OpenShift container image ${artifact}:${devTag}"
+      sh "oc start-build apirest-app-day-pipeline-cicd --from-file=target/${artifact}-${prodTag}.jar --wait=true -n appday-develop"
+      sh "oc tag apirest-app-day-pipeline-cicd:latest apirest-app-day-pipeline-cicd:${devTag} -n appday-develop"
+    }
+
+    stage('Deploy Application') {
+      echo "Deploy container image to Development Project"
+      sh "oc set image dc/apirest-app-day-pipeline apirest-app-day-pipeline=docker-registry.default.svc:5000/appday-develop/apirest-app-day-pipeline-cicd:${devTag} -n appday-develop"
+      sh "oc rollout latest dc/apirest-app-day-pipeline -n appday-develop"
+
+      sleep 2
+
+      def dc_version = sh(returnStdout: true, script: "oc describe dc/apirest-app-day-pipeline -n appday-develop | grep 'Latest Version:' | sed 's/Latest Version://g; s/[[:space:]]//g'").trim()
+      echo "Version de despliegue ${dc_version}"
+
+      def rc_replicas = sh(returnStdout: true, script: "oc get rc/apirest-app-day-pipeline-${dc_version} -o yaml -n appday-develop | grep -m 1 '[^.]replicas:' | sed 's/replicas://g; s/[[:space:]]//g'").trim()
+      def rc_replica_deseadas = sh(returnStdout: true, script: "oc get rc/apirest-app-day-pipeline-${dc_version} -o yaml -n appday-develop | grep 'readyReplicas:' | sed 's/readyReplicas://g; s/[[:space:]]//g'").trim()
+
+      echo "Replicas actuales ${rc_replicas} Replicas deseadas ${rc_replica_deseadas}"
+
+      while(rc_replica_deseadas != rc_replicas) {
+        sleep 5
+        rc_replicas = sh(returnStdout: true, script: "oc get rc/apirest-app-day-pipeline-${dc_version} -o yaml -n appday-develop | grep -m 1 '[^.]replicas:' | sed 's/replicas://g; s/[[:space:]]//g'").trim()
+        rc_replica_deseadas = sh(returnStdout: true, script:"oc get rc/apirest-app-day-pipeline-${dc_version} -o yaml -n appday-develop | grep 'readyReplicas:' | sed 's/readyReplicas://g; s/[[:space:]]//g'").trim()
+        echo "Replicas actuales ${rc_replicas} Replicas deseadas ${rc_replica_deseadas}"
+      }
+
+      echo "Replication controller orquestador-hpdh desarrollo listo"
+    }
+
+  }
+}
+
+// Convenience Functions to read variables from the pom.xml
+def getVersionFromPom(pom) {
+  def matcher = readFile(pom) =~ '<version>(.+)</version>'
+  matcher ? matcher[0][1] : null
+}
+def getGroupIdFromPom(pom) {
+  def matcher = readFile(pom) =~ '<groupId>(.+)</groupId>'
+  matcher ? matcher[0][1] : null
+}
+def getArtifactIdFromPom(pom) {
+  def matcher = readFile(pom) =~ '<artifactId>(.+)</artifactId>'
+  matcher ? matcher[0][1] : null
+}

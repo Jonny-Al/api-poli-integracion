@@ -1,0 +1,23 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: apirest-app-day-pipeline
+  namespace: jenkins
+spec:
+  runPolicy: Serial
+  source:
+    git:
+      uri: >-
+        https://github.com/Jonny-Al/api-poli-integracion
+      ref: "develop"
+    sourceSecret:
+      name: git
+    type: Git
+  strategy:
+    jenkinsPipelineStrategy:
+      env:
+        - name: GIT_SSL_NO_VERIFY
+          value: 'true'
+      jenkinsfilePath: Jenkinsfile
+    type: JenkinsPipeline
+  triggers: []
