@@ -25,9 +25,8 @@ public class RolController {
     @GetMapping (path = "/list", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> listRoles() {
         logger.info("---- http request lista de roles -----");
-        List<RolVO> listRoles = rolService.listRoles();
         logger.info("---- respondiendo roles -----");
-        return ResponseEntity.status(HttpStatus.OK).body(listRoles != null ? listRoles : Util.messageJson("Sin información"));
+        return ResponseEntity.ok(Util.messageJson("En este horario no se puede consultar roles"));
     }
 
     @GetMapping (path = "/filter", produces = MediaType.APPLICATION_JSON_VALUE)
