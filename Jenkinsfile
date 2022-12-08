@@ -20,8 +20,8 @@ pipeline {
             echo "Hacer push a la imagen"
              steps{
                 script{
-                        withCredentials([string(credentialsId: '<CREDENCIALES-DOCKER>', variable: '<DOCKER-PWD>')]) {
-                        sh 'docker login -u javatechie -p <DOCKER-PWD>'
+                        withCredentials([string(credentialsId: '123456', variable: '123456')]) {
+                        sh 'docker login -u javatechie -p 123456'
                         sh 'docker push poli/integration-api-rest'
                     }
                 }
